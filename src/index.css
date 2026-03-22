@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Playfair Display", serif;
+  
+  --color-bg-main: var(--bg-main);
+  --color-text-main: var(--text-main);
+  --color-border-main: var(--border-main);
+  --color-bg-card: var(--bg-card);
+  --color-bg-invert: var(--bg-invert);
+  --color-text-invert: var(--text-invert);
+  --color-bg-hover: var(--bg-hover);
+  --color-bg-muted: var(--bg-muted);
+}
+
+@layer base {
+  :root {
+    --bg-main: #E4E3E0;
+    --text-main: #141414;
+    --border-main: #141414;
+    --bg-card: #ffffff;
+    --bg-invert: #141414;
+    --text-invert: #E4E3E0;
+    --bg-hover: #141414;
+    --bg-muted: rgba(20, 20, 20, 0.1);
+  }
+  .dark {
+    --bg-main: #141414;
+    --text-main: #E4E3E0;
+    --border-main: #E4E3E0;
+    --bg-card: #222222;
+    --bg-invert: #E4E3E0;
+    --text-invert: #141414;
+    --bg-hover: #E4E3E0;
+    --bg-muted: rgba(228, 227, 224, 0.1);
+  }
+}

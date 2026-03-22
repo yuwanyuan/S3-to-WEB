@@ -1,0 +1,5 @@
+{
+  "name": "S3 协议通用代理管理器",
+  "description": "基于 React 和 Express 构建的高性能 S3 协议代理管理界面。支持 AWS S3、Cloudflare R2、阿里云 OSS 等兼容 S3 协议的服务。支持边缘流式传输和 AWS V4 签名。",
+  "requestFramePermissions": []
+}
