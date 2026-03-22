@@ -24,7 +24,8 @@ import {
   Check,
   Moon,
   Sun,
-  Languages
+  Languages,
+  Edit2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -37,7 +38,7 @@ interface S3Object {
   lastModified: string;
 }
 
-type ModalType = 'delete' | 'folder' | 'copy' | 'move' | null;
+type ModalType = 'delete' | 'folder' | 'copy' | 'move' | 'rename' | null;
 
 interface ModalConfig {
   type: ModalType;
@@ -138,6 +139,8 @@ export default function App() {
       modalNewFolder: '新建文件夹',
       modalCopyFile: '复制文件',
       modalMoveFile: '移动文件',
+      modalRenameFile: '重命名文件',
+      rename: '重命名',
       region: '区域',
       bucket: '存储桶',
       auto: '自动',
@@ -153,6 +156,7 @@ export default function App() {
       sameSourceTarget: '源路径和目标路径不能相同',
       copyFailed: '复制失败',
       moveFailed: '移动失败',
+      renameFailed: '重命名失败',
       fetchFailed: '获取数据失败，请检查后端配置。',
       uploadFailed: '上传失败，请检查网络或配置。',
       deleteFailed: '删除失败，请检查网络或配置。',
@@ -202,6 +206,8 @@ export default function App() {
       modalNewFolder: 'New Folder',
       modalCopyFile: 'Copy File',
       modalMoveFile: 'Move File',
+      modalRenameFile: 'Rename File',
+      rename: 'Rename',
       region: 'Region',
       bucket: 'Bucket',
       auto: 'Auto',
@@ -217,6 +223,7 @@ export default function App() {
       sameSourceTarget: 'Source and target paths cannot be the same',
       copyFailed: 'Copy failed',
       moveFailed: 'Move failed',
+      renameFailed: 'Rename failed',
       fetchFailed: 'Failed to fetch data, please check backend configuration.',
       uploadFailed: 'Upload failed, please check network or configuration.',
       deleteFailed: 'Delete failed, please check network or configuration.',
@@ -370,7 +377,7 @@ export default function App() {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const openMoveCopyModal = (type: 'move' | 'copy', targetKey: string) => {
+  const openMoveCopyModal = (type: 'move' | 'copy' | 'rename', targetKey: string) => {
     const parts = targetKey.split('/');
     const isFolder = targetKey.endsWith('/');
     const name = isFolder ? parts[parts.length - 2] + '/' : parts[parts.length - 1];
@@ -424,12 +431,14 @@ export default function App() {
           throw new Error(errData.error || currentT.createFolderFailed);
         }
       }
-      else if ((modalConfig.type === 'copy' || modalConfig.type === 'move') && modalConfig.targetKey) {
-        // 执行复制或移动
+      else if ((modalConfig.type === 'copy' || modalConfig.type === 'move' || modalConfig.type === 'rename') && modalConfig.targetKey) {
+        // 执行复制、移动或重命名
         let subFolder = modalInput.trim().replace(/^\/+/, '').replace(/\/+$/, '');
         if (subFolder) subFolder += '/';
         
-        const finalDestination = selectedFolder + subFolder + fileName;
+        const finalDestination = modalConfig.type === 'rename' 
+          ? selectedFolder + fileName
+          : selectedFolder + subFolder + fileName;
         
         if (!finalDestination || finalDestination === '/') throw new Error(currentT.invalidTargetPath);
         if (finalDestination === modalConfig.targetKey) throw new Error(currentT.sameSourceTarget);
@@ -442,7 +451,11 @@ export default function App() {
         });
         if (!response.ok) {
           const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.error || (modalConfig.type === 'copy' ? currentT.copyFailed : currentT.moveFailed));
+          throw new Error(errData.error || (
+            modalConfig.type === 'copy' ? currentT.copyFailed : 
+            modalConfig.type === 'move' ? currentT.moveFailed : 
+            currentT.renameFailed
+          ));
         }
       }
 
@@ -749,6 +762,13 @@ export default function App() {
                       </>
                     )}
                     <button 
+                      onClick={(e) => { e.stopPropagation(); openMoveCopyModal('rename', obj.key); }}
+                      className="p-1.5 border border-transparent hover:border-current rounded-sm transition-all"
+                      title={currentT.rename}
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                    <button 
                       onClick={(e) => { e.stopPropagation(); openMoveCopyModal('copy', obj.key); }}
                       className="p-1.5 border border-transparent hover:border-current rounded-sm transition-all"
                       title={currentT.copy}
@@ -814,6 +834,7 @@ export default function App() {
                 {modalConfig.type === 'folder' && currentT.modalNewFolder}
                 {modalConfig.type === 'copy' && currentT.modalCopyFile}
                 {modalConfig.type === 'move' && currentT.modalMoveFile}
+                {modalConfig.type === 'rename' && currentT.modalRenameFile}
               </h3>
               
               <div className="mb-6">
@@ -837,31 +858,35 @@ export default function App() {
                   </div>
                 )}
 
-                {(modalConfig.type === 'copy' || modalConfig.type === 'move') && (
+                {(modalConfig.type === 'copy' || modalConfig.type === 'move' || modalConfig.type === 'rename') && (
                   <div className="space-y-4">
-                    <div>
-                      <label className="text-xs font-bold uppercase tracking-widest opacity-60 block mb-2">{currentT.selectTarget}</label>
-                      <select 
-                        value={selectedFolder}
-                        onChange={(e) => setSelectedFolder(e.target.value)}
-                        className="w-full bg-bg-card border border-border-main p-3 text-sm font-mono focus:outline-none"
-                      >
-                        <option value="">/ ({currentT.root})</option>
-                        {allFolders.map(f => (
-                          <option key={f} value={f}>/{f}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold uppercase tracking-widest opacity-60 block mb-2">{currentT.newSubfolder}</label>
-                      <input 
-                        type="text"
-                        value={modalInput}
-                        onChange={(e) => setModalInput(e.target.value)}
-                        placeholder="new-folder"
-                        className="w-full bg-bg-card border border-border-main p-3 text-sm font-mono focus:outline-none"
-                      />
-                    </div>
+                    {modalConfig.type !== 'rename' && (
+                      <>
+                        <div>
+                          <label className="text-xs font-bold uppercase tracking-widest opacity-60 block mb-2">{currentT.selectTarget}</label>
+                          <select 
+                            value={selectedFolder}
+                            onChange={(e) => setSelectedFolder(e.target.value)}
+                            className="w-full bg-bg-card border border-border-main p-3 text-sm font-mono focus:outline-none"
+                          >
+                            <option value="">/ ({currentT.root})</option>
+                            {allFolders.map(f => (
+                              <option key={f} value={f}>/{f}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold uppercase tracking-widest opacity-60 block mb-2">{currentT.newSubfolder}</label>
+                          <input 
+                            type="text"
+                            value={modalInput}
+                            onChange={(e) => setModalInput(e.target.value)}
+                            placeholder="new-folder"
+                            className="w-full bg-bg-card border border-border-main p-3 text-sm font-mono focus:outline-none"
+                          />
+                        </div>
+                      </>
+                    )}
                     <div>
                       <label className="text-xs font-bold uppercase tracking-widest opacity-60 block mb-2">{currentT.fileName}</label>
                       <input 
@@ -874,7 +899,10 @@ export default function App() {
                     <div className="p-3 bg-bg-muted border border-border-main/20">
                       <p className="text-[10px] opacity-50 font-mono mb-1 uppercase tracking-widest">{currentT.previewPath}</p>
                       <p className="text-xs font-mono break-all font-bold">
-                        /{selectedFolder}{modalInput.trim() ? `${modalInput.trim().replace(/^\/+/, '').replace(/\/+$/, '')}/` : ''}{fileName}
+                        {modalConfig.type === 'rename' 
+                          ? `/${selectedFolder}${fileName}`
+                          : `/${selectedFolder}${modalInput.trim() ? `${modalInput.trim().replace(/^\/+/, '').replace(/\/+$/, '')}/` : ''}${fileName}`
+                        }
                       </p>
                     </div>
                   </div>
@@ -894,7 +922,7 @@ export default function App() {
                   disabled={
                     modalLoading || 
                     (modalConfig.type === 'folder' && !modalInput.trim()) ||
-                    ((modalConfig.type === 'copy' || modalConfig.type === 'move') && !fileName.trim())
+                    ((modalConfig.type === 'copy' || modalConfig.type === 'move' || modalConfig.type === 'rename') && !fileName.trim())
                   }
                   className={`px-4 py-2 text-sm font-bold uppercase tracking-wider flex items-center gap-2 transition-colors disabled:opacity-50 ${
                     modalConfig.type === 'delete' 
